@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Market Pro — финал</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',system-ui,sans-serif; }
+        body { background:#0d0d0f; color:#e0e0e0; display:flex; justify-content:center; }
+        #app { max-width:430px; width:100%; background:#0d0d0f; min-height:100vh; position:relative; overflow-x:hidden; box-shadow:0 0 40px rgba(0,0,0,0.8); }
+
+        /* Анимации Apple */
+        @keyframes springIn { 0% { opacity:0; transform:scale(0.8) translateY(20px); } 60% { transform:scale(1.05) translateY(-5px); } 100% { opacity:1; transform:scale(1) translateY(0); } }
+        @keyframes springPop { 0% { transform:scale(1); } 50% { transform:scale(1.2); } 100% { transform:scale(1); } }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        .spring-in { animation:springIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+        .spring-pop { animation:springPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+        /* ШАПКА */
+        .header { background:#141417; padding:12px 16px; display:flex; align-items:center; gap:10px; border-bottom:1px solid #2a2a30; position:sticky; top:0; z-index:10; }
+        .header .logo { font-size:24px; font-weight:800; color:#ffc107; letter-spacing:-0.5px; }
+        .header .logo i { margin-right:4px; }
+        .header .search-wrap { flex:1; display:flex; background:#2a2a30; border-radius:20px; overflow:hidden; border:1px solid #3a3a40; }
+        .header .search-wrap input { width:100%; padding:8px 14px; border:none; background:transparent; color:#e0e0e0; font-size:14px; outline:none; }
+        .header .search-wrap button { background:none; border:none; color:#888; padding:0 12px; cursor:pointer; }
+        .header .actions { display:flex; gap:14px; align-items:center; }
+        .header .actions .icon-btn { background:none; border:none; color:#aaa; font-size:20px; cursor:pointer; position:relative; transition:transform 0.2s; }
+        .header .actions .icon-btn:active { transform:scale(0.9); }
+        .header .actions .badge { position:absolute; top:-6px; right:-8px; background:#ff6b35; color:#fff; border-radius:50%; font-size:10px; padding:2px 6px; }
+        .header .actions .profile-pic { width:32px; height:32px; border-radius:50%; background:#ffc107; color:#0d0d0f; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; cursor:pointer; }
+
+        /* КАТЕГОРИИ (горизонтальные) */
+        .categories { display:flex; gap:12px; padding:10px 16px; overflow-x:auto; scrollbar-width:none; border-bottom:1px solid #1a1a20; }
+        .categories::-webkit-scrollbar { display:none; }
+        .categories .cat-item { display:flex; flex-direction:column; align-items:center; gap:4px; font-size:11px; color:#aaa; cursor:pointer; transition:color 0.2s; }
+        .categories .cat-item i { font-size:22px; color:#ffc107; }
+        .categories .cat-item:hover { color:#ffc107; }
+
+        /* БАННЕРЫ */
+        .banner-carousel { display:flex; gap:12px; padding:12px 16px; overflow-x:auto; scrollbar-width:none; }
+        .banner-carousel::-webkit-scrollbar { display:none; }
+        .banner-slide { min-width:85%; background:linear-gradient(145deg,#1a1a20,#2a2a30); border-radius:16px; padding:16px; border:1px solid #3a3a40; display:flex; justify-content:space-between; align-items:center; }
+        .banner-slide .text .big { font-size:18px; color:#ffc107; font-weight:700; }
+        .banner-slide .text .small { font-size:12px; color:#aaa; }
+        .banner-slide .btn-banner { background:#ffc107; color:#0d0d0f; border:none; border-radius:20px; padding:6px 16px; font-weight:600; cursor:pointer; }
+
+        /* ВКЛАДКИ КАТЕГОРИЙ (для фильтрации) */
+        .category-tabs { display:flex; gap:6px; padding:0 16px 12px; overflow-x:auto; scrollbar-width:none; border-bottom:1px solid #1a1a20; }
+        .category-tabs::-webkit-scrollbar { display:none; }
+        .category-tabs button { background:#1a1a20; border:1px solid #2a2a30; border-radius:30px; padding:6px 16px; color:#aaa; font-weight:600; font-size:13px; cursor:pointer; transition:all 0.3s; white-space:nowrap; }
+        .category-tabs button.active { background:#ffc107; color:#0d0d0f; border-color:#ffc107; box-shadow:0 4px 15px rgba(255,193,7,0.3); }
+        .category-tabs button:active { transform:scale(0.9); }
+
+        /* ОСНОВНОЙ КОНТЕНТ */
+        .main-content { padding:12px 16px 80px; overflow-y:auto; }
+        .page { display:none; animation:fadeIn 0.3s; }
+        .page.active { display:block; }
+
+        /* СЕТКА ТОВАРОВ */
+        .product-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+        .product-card { background:#1a1a20; border-radius:20px; padding:12px; border:1px solid #2a2a30; transition:all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); cursor:pointer; position:relative; box-shadow:0 4px 12px rgba(0,0,0,0.2); }
+        .product-card:hover { transform:translateY(-6px) scale(1.02); box-shadow:0 12px 30px rgba(255,193,7,0.15); border-color:#ffc107; }
+        .product-card img { width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:16px; background:#2a2a30; }
+        .product-card .name { font-size:14px; font-weight:600; margin:10px 0 4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; height:40px; }
+        .product-card .price { font-size:18px; font-weight:700; color:#ffc107; }
+        .product-card .price small { font-size:13px; color:#888; text-decoration:line-through; margin-left:6px; font-weight:400; }
+        .product-card .rating { font-size:13px; color:#f5b342; margin:4px 0 8px; }
+        .product-card .add-btn { width:100%; background:#ffc107; color:#0d0d0f; border:none; border-radius:30px; padding:8px 0; font-weight:700; cursor:pointer; transition:all 0.2s; font-size:14px; }
+        .product-card .add-btn:active { transform:scale(0.9); }
+        .product-card .badge { position:absolute; top:10px; right:10px; background:#ff6b35; color:#fff; font-size:10px; padding:2px 10px; border-radius:20px; font-weight:600; }
+        .product-card .fav-btn { position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.6); border:none; border-radius:50%; width:32px; height:32px; color:#fff; font-size:16px; cursor:pointer; transition:all 0.2s; backdrop-filter:blur(4px); }
+        .product-card .fav-btn.active { color:#ff6b35; background:rgba(255,107,53,0.4); }
+        .product-card .fav-btn:active { transform:scale(0.8); }
+
+        /* СТРАНИЦА ТОВАРА */
+        .product-page { display:none; background:#0d0d0f; min-height:100vh; padding-bottom:80px; }
+        .product-page.active { display:block; }
+        .back-btn { background:none; border:none; color:#ffc107; font-size:24px; padding:12px 16px; cursor:pointer; display:flex; align-items:center; gap:8px; }
+        .carousel { position:relative; width:100%; aspect-ratio:1/1; background:#1a1a20; overflow:hidden; }
+        .carousel img { width:100%; height:100%; object-fit:cover; display:none; }
+        .carousel img.active { display:block; animation:fadeIn 0.4s; }
+        .carousel .arrow { position:absolute; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.5); color:#fff; border:none; padding:12px; font-size:20px; cursor:pointer; border-radius:50%; z-index:5; }
+        .carousel .prev { left:8px; }
+        .carousel .next { right:8px; }
+        .carousel .dots { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); display:flex; gap:6px; }
+        .carousel .dots span { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,0.3); }
+        .carousel .dots span.active { background:#ffc107; }
+        .info { padding:16px; }
+        .info .title { font-size:22px; font-weight:700; }
+        .info .price { font-size:28px; font-weight:700; color:#ffc107; }
+        .info .price small { font-size:18px; color:#888; text-decoration:line-through; margin-left:10px; }
+        .info .rating { color:#f5b342; margin:6px 0 10px; }
+        .info .desc { color:#aaa; line-height:1.6; }
+        .info .specs { margin:12px 0; background:#141417; border-radius:12px; padding:12px; }
+        .info .specs table { width:100%; }
+        .info .specs td { padding:6px 0; border-bottom:1px solid #2a2a30; }
+        .info .specs td:first-child { color:#888; }
+        .info .reviews { margin:12px 0; }
+        .review-item { background:#141417; border-radius:10px; padding:10px 12px; margin-bottom:8px; border-left:3px solid #ffc107; }
+        .review-item .author { font-weight:600; }
+        .review-item .stars { color:#f5b342; font-size:13px; }
+        .review-item .text { color:#aaa; margin-top:4px; }
+        .review-form { background:#141417; border-radius:12px; padding:12px; margin-top:12px; }
+        .review-form input,.review-form select,.review-form textarea { width:100%; padding:8px 12px; border-radius:8px; border:1px solid #2a2a30; background:#0d0d0f; color:#e0e0e0; margin-bottom:8px; font-size:14px; }
+        .review-form textarea { resize:vertical; min-height:60px; }
+        .review-form .submit-btn { background:#ffc107; color:#0d0d0f; border:none; border-radius:20px; padding:8px 16px; font-weight:600; cursor:pointer; }
+        .actions { padding:16px; display:flex; gap:12px; position:sticky; bottom:0; background:#141417; border-top:1px solid #2a2a30; }
+        .actions button { flex:1; padding:14px; border:none; border-radius:30px; font-weight:700; font-size:16px; cursor:pointer; }
+
+        /* КОРЗИНА, ЗАКАЗЫ, ИЗБРАННОЕ */
+        .cart-item, .order-item { display:flex; gap:12px; background:#1a1a20; border-radius:12px; padding:12px; margin-bottom:10px; border:1px solid #2a2a30; align-items:center; }
+        .cart-item img { width:60px; height:60px; object-fit:cover; border-radius:8px; }
+        .cart-item-info { flex:1; }
+        .cart-item-name { font-weight:600; }
+        .cart-item-price { color:#ffc107; }
+        .cart-item-qty { display:flex; align-items:center; gap:8px; }
+        .cart-item-qty button { background:#2a2a30; border:none; color:#e0e0e0; width:26px; height:26px; border-radius:50%; font-size:16px; cursor:pointer; }
+        .cart-total { display:flex; justify-content:space-between; font-size:18px; font-weight:700; padding:12px 0; border-top:1px solid #2a2a30; margin-top:8px; }
+        .checkout-btn { width:100%; background:#ffc107; color:#0d0d0f; border:none; border-radius:30px; padding:14px; font-weight:700; font-size:16px; cursor:pointer; }
+        .order-status { display:inline-block; padding:2px 10px; border-radius:12px; font-size:12px; font-weight:600; }
+        .status-delivered { background:#1a3a2a; color:#b0ffb0; }
+        .status-shipped { background:#3a3a1a; color:#ffd700; }
+        .status-pending { background:#3a1a1a; color:#ff6b6b; }
+
+        /* БАНК */
+        .bank-card { background:linear-gradient(145deg,#1a1a20,#0d0d0f); border-radius:24px; padding:24px; border:1px solid #ffc10755; box-shadow:0 8px 30px rgba(255,193,7,0.1); margin-bottom:20px; }
+        .bank-card .card-number { font-size:22px; letter-spacing:4px; color:#ffc107; font-weight:600; margin:12px 0; }
+        .bank-card .card-holder { display:flex; justify-content:space-between; color:#aaa; }
+        .bank-card .card-balance { font-size:28px; font-weight:700; color:#ffc107; margin:8px 0; transition:all 0.3s; }
+        .bank-actions { display:flex; gap:12px; flex-wrap:wrap; }
+        .bank-actions button { flex:1; background:#ffc107; color:#0d0d0f; border:none; border-radius:30px; padding:12px; font-weight:700; cursor:pointer; }
+        .bank-actions .secondary { background:#2a2a30; color:#e0e0e0; }
+        .bank-popup { display:none; background:#1a1a20; border-radius:16px; padding:20px; border:1px solid #2a2a30; margin-top:12px; animation:slideDown 0.3s; }
+        .bank-popup.active { display:block; }
+        @keyframes slideDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+        .bank-popup input { width:100%; padding:10px; border-radius:10px; border:1px solid #2a2a30; background:#0d0d0f; color:#e0e0e0; margin-bottom:10px; }
+        .bank-popup button { background:#ffc107; color:#0d0d0f; border:none; border-radius:30px; padding:10px; width:100%; font-weight:700; cursor:pointer; }
+
+        /* ПРОФИЛЬ */
+        .profile-card { background:#1a1a20; border-radius:16px; padding:20px; border:1px solid #2a2a30; text-align:center; }
+        .profile-card .avatar { width:80px; height:80px; border-radius:50%; background:#ffc107; color:#0d0d0f; font-size:36px; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; font-weight:700; }
+        .profile-card .name { font-size:22px; font-weight:700; }
+        .profile-card .balance { font-size:18px; color:#ffc107; margin:8px 0; }
+
+        /* НИЖНЯЯ НАВИГАЦИЯ */
+        .bottom-nav { position:fixed; bottom:0; left:0; width:100%; max-width:430px; background:#141417; border-top:1px solid #2a2a30; display:flex; justify-content:space-around; padding:8px 0 14px; z-index:20; }
+        .bottom-nav .nav-item { background:none; border:none; color:#888; font-size:12px; display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; transition:color 0.2s; }
+        .bottom-nav .nav-item i { font-size:22px; }
+        .bottom-nav .nav-item.active { color:#ffc107; }
+
+        /* TOAST */
+        .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#1a2a3a; color:#e0e0e0; padding:12px 24px; border-radius:40px; font-weight:600; border:1px solid #3a4a5a; z-index:50; display:none; animation:slideUp 0.4s; }
+        .toast.show { display:block; }
+        .toast .icon { margin-right:8px; }
+        @keyframes slideUp { from { opacity:0; transform:translateX(-50%) translateY(20px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+        .cart-bump { animation:springPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .balance-flash { animation:flash 0.6s; }
+        @keyframes flash { 0%{color:#ffc107;transform:scale(1)} 50%{color:#fff;transform:scale(1.1)} 100%{color:#ffc107;transform:scale(1)} }
+
+        @media (min-width:431px){ #app { border-left:1px solid #2a2a30; border-right:1px solid #2a2a30; } }
+        ::-webkit-scrollbar { width:4px; }
+        ::-webkit-scrollbar-track { background:#0d0d0f; }
+        ::-webkit-scrollbar-thumb { background:#ffc107; border-radius:4px; }
+    </style>
+</head>
+<body>
+<div id="app">
+    <!-- ШАПКА -->
+    <header class="header">
+        <div class="logo"><i class="fas fa-crown"></i>WB</div>
+        <div class="search-wrap">
+            <input type="text" placeholder="Найти..." id="searchInput">
+            <button><i class="fas fa-search"></i></button>
+        </div>
+        <div class="actions">
+            <button class="icon-btn" onclick="navigateTo('favorites')"><i class="fas fa-heart"></i><span class="badge" id="favBadge">0</span></button>
+            <button class="icon-btn" onclick="navigateTo('cart')"><i class="fas fa-shopping-bag" id="cartIcon"></i><span class="badge" id="cartBadge">0</span></button>
+            <div class="profile-pic" onclick="navigateTo('profile')">М</div>
+        </div>
+    </header>
+
+    <!-- КАТЕГОРИИ (горизонтальные иконки) -->
+    <div class="categories">
+        <div class="cat-item"><i class="fas fa-mobile-alt"></i>Электроника</div>
+        <div class="cat-item"><i class="fas fa-tshirt"></i>Одежда</div>
+        <div class="cat-item"><i class="fas fa-home"></i>Дом</div>
+        <div class="cat-item"><i class="fas fa-gamepad"></i>Игры</div>
+        <div class="cat-item"><i class="fas fa-book"></i>Книги</div>
+        <div class="cat-item"><i class="fas fa-shoe-prints"></i>Обувь</div>
+    </div>
+
+    <!-- БАННЕРЫ -->
+    <div class="banner-carousel">
+        <div class="banner-slide"><div class="text"><div class="big">🔥 Суперскидка до 70%</div><div class="small">на электронику</div></div><button class="btn-banner">Смотреть</button></div>
+        <div class="banner-slide"><div class="text"><div class="big">🎁 Подарки за заказы</div><div class="small">от 5000 ₽</div></div><button class="btn-banner">Узнать</button></div>
+        <div class="banner-slide"><div class="text"><div class="big">📦 Бесплатная доставка</div><div class="small">сегодня и завтра</div></div><button class="btn-banner">Заказать</button></div>
+    </div>
+
+    <!-- ВКЛАДКИ КАТЕГОРИЙ (для фильтрации) -->
+    <div class="category-tabs" id="categoryTabs">
+        <button class="active" data-category="all">Все</button>
+        <button data-category="electronics">📱 Электроника</button>
+        <button data-category="games">🎮 Игры</button>
+        <button data-category="clothing">👕 Одежда</button>
+        <button data-category="shoes">👟 Обувь</button>
+    </div>
+
+    <!-- ОСНОВНОЙ КОНТЕНТ -->
+    <div class="main-content">
+        <div class="page active" id="page-home">
+            <div class="product-grid" id="productGrid"></div>
+        </div>
+        <div class="page" id="page-favorites"><h2 style="margin-bottom:12px;">❤️ Избранное</h2><div id="favoritesList"></div></div>
+        <div class="page" id="page-cart">
+            <h2 style="margin-bottom:12px;">🛒 Корзина</h2>
+            <div id="cartList"></div>
+            <div class="cart-total"><span>Итого:</span><span id="cartTotalAmount">0 ₽</span></div>
+            <button class="checkout-btn" onclick="showOrderForm()">Оформить заказ</button>
+            <div id="orderForm" style="display:none; margin-top:16px;">
+                <div class="order-section" style="background:#1a1a20;border-radius:16px;padding:16px;border:1px solid #2a2a30;">
+                    <h3>Адрес (Москва)</h3>
+                    <div class="address-list" id="addressList"></div>
+                    <h3>Дата доставки</h3>
+                    <select id="deliveryDate"><option value="сегодня">Сегодня</option><option value="завтра">Завтра</option><option value="послезавтра">Послезавтра</option></select>
+                    <h3>Оплата</h3>
+                    <div class="pay-method" style="display:flex;gap:12px;margin:8px 0;">
+                        <label><input type="radio" name="payment" value="balance" checked> Баланс ВБ</label>
+                        <label><input type="radio" name="payment" value="card"> Карта</label>
+                    </div>
+                    <div class="order-summary" id="orderSummary"></div>
+                    <button class="checkout-btn" onclick="placeOrder()">Подтвердить</button>
+                </div>
+            </div>
+        </div>
+        <div class="page" id="page-orders"><h2 style="margin-bottom:12px;">📦 Мои заказы</h2><div id="ordersList"></div></div>
+        <div class="page" id="page-bank">
+            <h2 style="margin-bottom:12px;">🏦 Банк</h2>
+            <div class="bank-card">
+                <div style="display:flex;justify-content:space-between;"><span style="color:#aaa;">Золотая карта</span><i class="fas fa-wifi" style="color:#ffc107;"></i></div>
+                <div class="card-number">****  ****  ****  0000</div>
+                <div class="card-holder"><span>MIKHAIL</span><span>12/26</span></div>
+                <div class="card-balance" id="cardBalanceDisplay">0 ₽</div>
+            </div>
+            <div class="bank-actions">
+                <button onclick="showBankPopup('deposit')">Пополнить</button>
+                <button class="secondary" onclick="showBankPopup('transfer')">Перевести</button>
+            </div>
+            <div class="bank-popup" id="bankPopup">
+                <h4 id="bankPopupTitle">Пополнение</h4>
+                <input type="number" id="bankAmount" placeholder="Сумма" />
+                <input type="text" id="bankRecipient" placeholder="Номер счета" style="display:none;" />
+                <button onclick="executeBankAction()">Подтвердить</button>
+                <button style="background:#2a2a30;color:#e0e0e0;margin-top:6px;" onclick="closeBankPopup()">Отмена</button>
+            </div>
+            <div style="margin-top:16px;background:#1a1a20;border-radius:12px;padding:12px;border:1px solid #2a2a30;">
+                <div style="display:flex;justify-content:space-between;"><span>Баланс ВБ</span><span id="wbBalanceDisplay" style="color:#ffc107;font-weight:700;">0 ₽</span></div>
+            </div>
+            <div style="margin-top:12px;background:#1a1a20;border-radius:12px;padding:12px;border:1px solid #2a2a30;">
+                <div style="font-size:14px;color:#aaa;">🎫 Ваш промокод: <span id="promoCodeDisplay" style="color:#ffc107;font-weight:700;">WB-2026</span> (скидка 10%)</div>
+            </div>
+        </div>
+        <div class="page" id="page-profile">
+            <div class="profile-card">
+                <div class="avatar">М</div>
+                <div class="name">Михаил</div>
+                <div class="balance">Баланс ВБ: <span id="profileBalance">0 ₽</span></div>
+                <div style="margin-top:8px;color:#888;">Карта: ●●●● 0000</div>
+                <button class="checkout-btn" style="margin-top:12px;background:#2a2a30;color:#e0e0e0;" onclick="navigateTo('orders')">📦 Мои заказы</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- СТРАНИЦА ТОВАРА -->
+    <div class="product-page" id="productPage">
+        <button class="back-btn" onclick="closeProductPage()"><i class="fas fa-arrow-left"></i> Назад</button>
+        <div class="carousel" id="productCarousel">
+            <button class="arrow prev" onclick="changeSlide(-1)">‹</button>
+            <button class="arrow next" onclick="changeSlide(1)">›</button>
+            <div class="dots" id="carouselDots"></div>
+        </div>
+        <div class="info">
+            <div class="title" id="pTitle"></div>
+            <div class="price" id="pPrice"></div>
+            <div class="rating" id="pRating"></div>
+            <div class="desc" id="pDesc"></div>
+            <div class="specs"><table><tbody id="pSpecsBody"></tbody></table></div>
+            <div class="reviews" id="pReviews"></div>
+            <div class="review-form">
+                <input type="text" id="pReviewName" placeholder="Ваше имя" value="Гость">
+                <select id="pReviewRating"><option value="5">★★★★★</option><option value="4">★★★★☆</option><option value="3">★★★☆☆</option><option value="2">★★☆☆☆</option><option value="1">★☆☆☆☆</option></select>
+                <textarea id="pReviewText" placeholder="Напишите отзыв..."></textarea>
+                <button class="submit-btn" onclick="addProductReview()">Отправить</button>
+            </div>
+        </div>
+        <div class="actions">
+            <button class="btn-cart" style="background:#ffc107;color:#0d0d0f;" onclick="addCurrentToCart()"><i class="fas fa-shopping-bag"></i> В корзину</button>
+            <button class="btn-buy" style="background:#2a2a30;color:#e0e0e0;" onclick="buyCurrent()"><i class="fas fa-bolt"></i> Купить</button>
+        </div>
+    </div>
+
+    <!-- НИЖНЯЯ НАВИГАЦИЯ -->
+    <div class="bottom-nav">
+        <button class="nav-item active" data-page="home"><i class="fas fa-home"></i>Главная</button>
+        <button class="nav-item" data-page="favorites"><i class="fas fa-heart"></i>Избранное</button>
+        <button class="nav-item" data-page="cart"><i class="fas fa-shopping-bag"></i>Корзина</button>
+        <button class="nav-item" data-page="orders"><i class="fas fa-box"></i>Заказы</button>
+        <button class="nav-item" data-page="bank"><i class="fas fa-university"></i>Банк</button>
+        <button class="nav-item" data-page="profile"><i class="fas fa-user"></i>Профиль</button>
+    </div>
+
+    <div class="toast" id="toast"><span class="icon"></span><span class="msg"></span></div>
+</div>
+
+<script>
+    // ---- 50+ ТОВАРОВ С РЕАЛЬНЫМИ КАРТИНКАМИ И КАТЕГОРИЯМИ ----
+    const products = [
+        // Электроника (15)
+        { id:1, name:'Samsung Galaxy S26 Ultra', price:69990, oldPrice:79990, rating:4.9, category:'electronics', desc:'6.8" AMOLED, 200 Мп, Snapdragon 8 Gen 3, 5000 мАч.', specs:{'Экран':'6.8"','Память':'12/512 ГБ','Камера':'200 Мп','Батарея':'6000 мАч'}, img:'https://images.unsplash.com/photo-1610945265064-0e34e5b5b6a8?w=300&h=300&fit=crop' },
+        { id:2, name:'Ноутбук ZenBook Pro', price:112990, oldPrice:129990, rating:4.7, category:'electronics', desc:'Intel i9-14900H, RTX 4060, 32GB RAM, 2TB SSD.', specs:{'Процессор':'i9-14900H','Видеокарта':'RTX 4060','ОЗУ':'32GB','Накопитель':'2TB SSD'}, img:'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=300&h=300&fit=crop' },
+        { id:3, name:'Наушники WH-1000XM6', price:24990, oldPrice:29990, rating:4.8, category:'electronics', desc:'Шумоподавление, 40 ч, Hi-Res.', specs:{'Тип':'Беспроводные','Время':'40 ч','Шумоподавление':'Да'}, img:'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=300&h=300&fit=crop' },
+        { id:4, name:'Умные часы Watch Ultra', price:31990, oldPrice:36990, rating:4.6, category:'electronics', desc:'AMOLED, GPS, титан, 100 м, ЭКГ.', specs:{'Дисплей':'AMOLED','Защита':'100 м','GPS':'Да','ЭКГ':'Да'}, img:'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=300&h=300&fit=crop' },
+        { id:5, name:'Игровая мышь G Pro X', price:7990, oldPrice:9990, rating:4.5, category:'electronics', desc:'25600 DPI, оптический, RGB, 63 г.', specs:{'DPI':'25600','Вес':'63 г','Кнопки':'6','Подсветка':'RGB'}, img:'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=300&h=300&fit=crop' },
+        { id:6, name:'Мех. клавиатура K800', price:10990, oldPrice:12990, rating:4.4, category:'electronics', desc:'Red switches, PBT, RGB, N-key rollover.', specs:{'Свитчи':'Red','Колпачки':'PBT','Подсветка':'RGB','Подключение':'USB-C'}, img:'https://images.unsplash.com/photo-1618384887929-78ec5f5a0b1c?w=300&h=300&fit=crop' },
+        { id:7, name:'Планшет Tab S10', price:45990, oldPrice:51990, rating:4.7, category:'electronics', desc:'12.4" OLED, S-Pen, 8GB RAM, 5G.', specs:{'Экран':'12.4" OLED','Память':'8/128 ГБ','S-Pen':'Да','5G':'Да'}, img:'https://images.unsplash.com/photo-1561154464-82e9adf32764?w=300&h=300&fit=crop' },
+        { id:8, name:'Монитор 27" 4K', price:32990, oldPrice:38990, rating:4.6, category:'electronics', desc:'IPS, HDR600, 144 Гц, 1 мс, USB-C.', specs:{'Размер':'27"','Частота':'144 Гц','Тип':'IPS','HDR':'HDR600'}, img:'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=300&h=300&fit=crop' },
+        { id:9, name:'SSD 2TB M.2', price:14990, oldPrice:17990, rating:4.9, category:'electronics', desc:'NVMe PCIe 4.0, 7400/6800 МБ/с.', specs:{'Объем':'2TB','Чтение':'7400 МБ/с','Запись':'6800 МБ/с'}, img:'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?w=300&h=300&fit=crop' },
+        { id:10, name:'Колонка JBL Xtreme 4', price:18990, oldPrice:21990, rating:4.8, category:'electronics', desc:'100 Вт, IP67, 24 ч.', specs:{'Мощность':'100 Вт','Защита':'IP67','Время':'24 ч'}, img:'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=300&h=300&fit=crop' },
+        { id:11, name:'Смарт-лампа RGB', price:1290, oldPrice:1590, rating:4.2, category:'electronics', desc:'1600 лм, 16 млн цветов, Wi-Fi.', specs:{'Свет':'1600 лм','Управление':'Wi-Fi','Цвета':'16 млн'}, img:'https://images.unsplash.com/photo-1563387852576-964c9f8b5d3b?w=300&h=300&fit=crop' },
+        { id:12, name:'Беспроводная зарядка', price:2490, oldPrice:2990, rating:4.4, category:'electronics', desc:'Qi, 15 Вт, LED.', specs:{'Мощность':'15 Вт','Стандарт':'Qi','LED':'Да'}, img:'https://images.unsplash.com/photo-1580982172477-9373ff52ae43?w=300&h=300&fit=crop' },
+        { id:13, name:'Смарт-телевизор 55" 4K', price:45990, oldPrice:51990, rating:4.6, category:'electronics', desc:'QLED, HDR10+, 120 Гц, Smart TV.', specs:{'Размер':'55"','Разрешение':'4K','HDR':'HDR10+','Частота':'120 Гц'}, img:'https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=300&h=300&fit=crop' },
+        { id:14, name:'Электросамокат Mi Pro 3', price:34990, oldPrice:39990, rating:4.5, category:'electronics', desc:'350 Вт, 45 км, складной.', specs:{'Мотор':'350 Вт','Запас':'45 км','Складной':'Да'}, img:'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=300&h=300&fit=crop' },
+        { id:15, name:'Электрическая зубная щетка Sonicare', price:6990, oldPrice:7990, rating:4.4, category:'electronics', desc:'Ультразвук, 5 режимов.', specs:{'Тип':'Ультразвуковая','Режимов':'5','Зарядка':'Беспроводная'}, img:'https://images.unsplash.com/photo-1584786421555-3b8f7b1e23c6?w=300&h=300&fit=crop' },
+        // Игры (10)
+        { id:16, name:'Игровая консоль PS5 Pro', price:79990, oldPrice:89990, rating:4.9, category:'games', desc:'8K, 120 Гц, SSD 2TB, DualSense 2.', specs:{'Разрешение':'8K','SSD':'2TB','Частота':'120 Гц','VR':'Да'}, img:'https://images.unsplash.com/photo-1621232098241-8c3fb8c8a6e8?w=300&h=300&fit=crop' },
+        { id:17, name:'Игровой монитор 32" 1440p', price:24990, oldPrice:28990, rating:4.7, category:'games', desc:'VA, 165 Гц, 1 мс, FreeSync.', specs:{'Размер':'32"','Частота':'165 Гц','Тип':'VA','FreeSync':'Да'}, img:'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=300&h=300&fit=crop' },
+        { id:18, name:'Игровое кресло Secretlab Titan', price:32990, oldPrice:37990, rating:4.7, category:'games', desc:'Кожа, регулировка, подголовник, 150 кг.', specs:{'Материал':'Кожа','Регулировка':'Да','Нагрузка':'150 кг'}, img:'https://images.unsplash.com/photo-1585409677983-0f6c41ca9c3b?w=300&h=300&fit=crop' },
+        { id:19, name:'Геймпад DualSense 2', price:6990, oldPrice:7990, rating:4.8, category:'games', desc:'Беспроводной, тактильная отдача, встроенный микрофон.', specs:{'Тип':'Беспроводной','Особенности':'Тактильная отдача','Совместимость':'PS5'}, img:'https://images.unsplash.com/photo-1621259182978-fbf93132d3c1?w=300&h=300&fit=crop' },
+        { id:20, name:'Игровая клавиатура Razer BlackWidow', price:12990, oldPrice:14990, rating:4.6, category:'games', desc:'Механическая, зеленые свитчи, RGB Chroma.', specs:{'Тип':'Механическая','Свитчи':'Зеленые','Подсветка':'Chroma RGB'}, img:'https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?w=300&h=300&fit=crop' },
+        { id:21, name:'Игровая мышь Razer Viper Ultimate', price:9990, oldPrice:11990, rating:4.7, category:'games', desc:'20k DPI, оптический, 74 г, беспроводная.', specs:{'DPI':'20k','Вес':'74 г','Тип':'Беспроводная'}, img:'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=300&h=300&fit=crop' },
+        { id:22, name:'Наушники HyperX Cloud II', price:7990, oldPrice:9990, rating:4.5, category:'games', desc:'7.1 виртуальный объемный звук, съемный микрофон.', specs:{'Звук':'7.1','Микрофон':'Съемный','Тип':'Проводные'}, img:'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=300&h=300&fit=crop' },
+        { id:23, name:'Игровая консоль Xbox Series X', price:69990, oldPrice:79990, rating:4.8, category:'games', desc:'4K, 120 Гц, SSD 1TB, Quick Resume.', specs:{'Разрешение':'4K','SSD':'1TB','Quick Resume':'Да'}, img:'https://images.unsplash.com/photo-1621259182978-fbf93132d3c1?w=300&h=300&fit=crop' },
+        { id:24, name:'Игровой руль Thrustmaster T300', price:24990, oldPrice:29990, rating:4.4, category:'games', desc:'Педали, 900° вращения, сменные колеса.', specs:{'Вращение':'900°','Педали':'Да','Сменные колеса':'Да'}, img:'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=300&h=300&fit=crop' },
+        { id:25, name:'VR-шлем Meta Quest 3', price:44990, oldPrice:49990, rating:4.9, category:'games', desc:'Встроенный процессор, 4K, беспроводной.', specs:{'Разрешение':'4K','Процессор':'Встроенный','Тип':'Беспроводной'}, img:'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=300&h=300&fit=crop' },
+        // Одежда (12)
+        { id:26, name:'Футболка Nike Sportswear', price:2990, oldPrice:3990, rating:4.3, category:'clothing', desc:'Хлопок, дышащий, логотип.', specs:{'Материал':'Хлопок','Тип':'Футболка','Логотип':'Да'}, img:'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=300&h=300&fit=crop' },
+        { id:27, name:'Куртка Adidas Originals', price:8990, oldPrice:10990, rating:4.6, category:'clothing', desc:'Утепленная, ветрозащита, карманы.', specs:{'Материал':'Полиэстер','Утепление':'Да','Карманы':'Да'}, img:'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&h=300&fit=crop' },
+        { id:28, name:'Джинсы Levi’s 501', price:5990, oldPrice:6990, rating:4.5, category:'clothing', desc:'Классические, прямые, деним.', specs:{'Тип':'Прямые','Материал':'Деним','Цвет':'Синий'}, img:'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=300&h=300&fit=crop' },
+        { id:29, name:'Платье Zara Premium', price:3990, oldPrice:4990, rating:4.2, category:'clothing', desc:'Летнее, легкое, цветочный принт.', specs:{'Тип':'Платье','Длина':'Миди','Принт':'Цветочный'}, img:'https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=300&h=300&fit=crop' },
+        { id:30, name:'Худи Tommy Hilfiger', price:4990, oldPrice:5990, rating:4.7, category:'clothing', desc:'Флис, капюшон, нашивка.', specs:{'Материал':'Флис','Капюшон':'Да','Нашивка':'Да'}, img:'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=300&h=300&fit=crop' },
+        { id:31, name:'Брюки Uniqlo Smart', price:2990, oldPrice:3490, rating:4.4, category:'clothing', desc:'Стретч, элегантные, для офиса.', specs:{'Тип':'Брюки','Стретч':'Да','Применение':'Офис'}, img:'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=300&h=300&fit=crop' },
+        { id:32, name:'Рубашка Oxford', price:3490, oldPrice:3990, rating:4.3, category:'clothing', desc:'Классическая, воротник на пуговицах.', specs:{'Тип':'Рубашка','Материал':'Хлопок','Воротник':'На пуговицах'}, img:'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=300&h=300&fit=crop' },
+        { id:33, name:'Шорты Puma', price:1990, oldPrice:2490, rating:4.1, category:'clothing', desc:'Спортивные, с сеткой, логотип.', specs:{'Тип':'Шорты','Материал':'Полиэстер','Сетка':'Да'}, img:'https://images.unsplash.com/photo-1565693413579-8f9b5b6b5b5b?w=300&h=300&fit=crop' },
+        { id:34, name:'Ветровка The North Face', price:7990, oldPrice:8990, rating:4.6, category:'clothing', desc:'Водонепроницаемая, капюшон, легкая.', specs:{'Водонепроницаемость':'Да','Капюшон':'Да','Вес':'Легкая'}, img:'https://images.unsplash.com/photo-1558618666-fcd25c85f0c1?w=300&h=300&fit=crop' },
+        { id:35, name:'Толстовка Champion', price:3990, oldPrice:4990, rating:4.5, category:'clothing', desc:'Флис, карман кенгуру, нашивка.', specs:{'Тип':'Толстовка','Карман':'Кенгуру','Нашивка':'Да'}, img:'https://images.unsplash.com/photo-1558618666-fcd25c85f0c1?w=300&h=300&fit=crop' },
+        { id:36, name:'Пиджак H&M', price:6990, oldPrice:7990, rating:4.2, category:'clothing', desc:'Однобортный, приталенный, классический.', specs:{'Тип':'Пиджак','Приталенный':'Да','Пуговицы':'Да'}, img:'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=300&h=300&fit=crop' },
+        { id:37, name:'Спортивный костюм Nike', price:9990, oldPrice:11990, rating:4.8, category:'clothing', desc:'Куртка+брюки, флис, логотип.', specs:{'Тип':'Костюм','Материал':'Флис','Логотип':'Да'}, img:'https://images.unsplash.com/photo-1558618666-fcd25c85f0c1?w=300&h=300&fit=crop' },
+        // Обувь (13)
+        { id:38, name:'Кроссовки Nike Air Max', price:12990, oldPrice:14990, rating:4.8, category:'shoes', desc:'Дышащий верх, Air Max амортизация.', specs:{'Амортизация':'Air Max','Верх':'Сетка','Подошва':'Резина'}, img:'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&h=300&fit=crop' },
+        { id:39, name:'Кеды Converse Chuck', price:5990, oldPrice:6990, rating:4.6, category:'shoes', desc:'Классические, парусина, резиновая подошва.', specs:{'Материал':'Парусина','Подошва':'Резина','Тип':'Кеды'}, img:'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=300&h=300&fit=crop' },
+        { id:40, name:'Ботинки Timberland', price:14990, oldPrice:16990, rating:4.9, category:'shoes', desc:'Кожа, водоотталкивающие, утепленные.', specs:{'Материал':'Кожа','Водоотталкивание':'Да','Утепление':'Да'}, img:'https://images.unsplash.com/photo-1539185441755-769473a23570?w=300&h=300&fit=crop' },
+        { id:41, name:'Кроссовки Adidas Ultraboost', price:13990, oldPrice:15990, rating:4.7, category:'shoes', desc:'Тканевый верх, Boost пена, амортизация.', specs:{'Верх':'Ткань','Амортизация':'Boost','Подошва':'Резина'}, img:'https://images.unsplash.com/photo-1584735935682-2f2b69d8ac5c?w=300&h=300&fit=crop' },
+        { id:42, name:'Туфли Clarks', price:9990, oldPrice:11990, rating:4.4, category:'shoes', desc:'Кожа, классические, удобная стелька.', specs:{'Материал':'Кожа','Тип':'Туфли','Стелька':'Удобная'}, img:'https://images.unsplash.com/photo-1539185441755-769473a23570?w=300&h=300&fit=crop' },
+        { id:43, name:'Сандалии Teva', price:3990, oldPrice:4990, rating:4.3, category:'shoes', desc:'Водонепроницаемые, ремешки, нескользящие.', specs:{'Водонепроницаемость':'Да','Ремешки':'Да','Подошва':'Нескользящая'}, img:'https://images.unsplash.com/photo-1565693413579-8f9b5b6b5b5b?w=300&h=300&fit=crop' },
+        { id:44, name:'Кроссовки New Balance 574', price:8990, oldPrice:9990, rating:4.5, category:'shoes', desc:'Замша, сетка, ENCAP амортизация.', specs:{'Верх':'Замша+сетка','Амортизация':'ENCAP','Подошва':'Резина'}, img:'https://images.unsplash.com/photo-1584735935682-2f2b69d8ac5c?w=300&h=300&fit=crop' },
+        { id:45, name:'Босоножки Rieker', price:6990, oldPrice:7990, rating:4.2, category:'shoes', desc:'Кожа, открытые, на платформе.', specs:{'Материал':'Кожа','Тип':'Босоножки','Каблук':'Платформа'}, img:'https://images.unsplash.com/photo-1565693413579-8f9b5b6b5b5b?w=300&h=300&fit=crop' },
+        { id:46, name:'Кеды Vans Old Skool', price:6990, oldPrice:7990, rating:4.6, category:'shoes', desc:'Кожа+парусина, классический дизайн.', specs:{'Материал':'Кожа+парусина','Тип':'Кеды','Дизайн':'Классический'}, img:'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=300&h=300&fit=crop' },
+        { id:47, name:'Кроссовки Puma RS-X', price:9990, oldPrice:11990, rating:4.4, category:'shoes', desc:'Ретро-дизайн, амортизация, сетка.', specs:{'Тип':'Кроссовки','Амортизация':'Да','Верх':'Сетка'}, img:'https://images.unsplash.com/photo-1584735935682-2f2b69d8ac5c?w=300&h=300&fit=crop' },
+        { id:48, name:'Сапоги Dr. Martens', price:17990, oldPrice:19990, rating:4.8, category:'shoes', desc:'Кожа, платформа, шнуровка.', specs:{'Материал':'Кожа','Платформа':'Да','Шнуровка':'Да'}, img:'https://images.unsplash.com/photo-1539185441755-769473a23570?w=300&h=300&fit=crop' },
+        { id:49, name:'Кроссовки Asics Gel-Kayano', price:15990, oldPrice:17990, rating:4.7, category:'shoes', desc:'Gel амортизация, сетчатый верх, стабильность.', specs:{'Амортизация':'Gel','Верх':'Сетка','Стабильность':'Да'}, img:'https://images.unsplash.com/photo-1584735935682-2f2b69d8ac5c?w=300&h=300&fit=crop' },
+        { id:50, name:'Шлепки Adidas Adilette', price:2990, oldPrice:3990, rating:4.1, category:'shoes', desc:'Резина, логотип, удобные.', specs:{'Материал':'Резина','Логотип':'Да','Тип':'Шлепки'}, img:'https://images.unsplash.com/photo-1565693413579-8f9b5b6b5b5b?w=300&h=300&fit=crop' },
+    ];
+
+    // Добавляем отзывы для всех
+    products.forEach(p => {
+        if (!p.reviews || p.reviews.length===0) {
+            p.reviews = [{ author: 'Покупатель', rating: 4, text: 'Хороший товар, рекомендую!' }];
+        }
+    });
+
+    // --- СОСТОЯНИЕ ---
+    let cart = [];
+    let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+    let orders = JSON.parse(localStorage.getItem('orders')) || [];
+    let wbBalance = 0, cardBalance = 0;
+    let currentProduct = null, currentSlide = 0, productImages = [];
+    let currentCategory = 'all';
+    let promoCode = 'WB-2026';
+
+    const addresses = ['Москва, Тверская ул., д.5','Москва, Арбат ул., д.12','Москва, просп. Мира, д.30','Москва, Новый Арбат, д.15'];
+
+    // --- РЕНДЕР ТОВАРОВ С ФИЛЬТРАЦИЕЙ ПО КАТЕГОРИИ ---
+    function renderProducts(category = 'all') {
+        const grid = document.getElementById('productGrid');
+        grid.innerHTML = '';
+        const filtered = category === 'all' ? products : products.filter(p => p.category === category);
+        filtered.forEach((p, index) => {
+            const isFav = favorites.includes(p.id);
+            const card = document.createElement('div');
+            card.className = 'product-card spring-in';
+            card.style.animationDelay = (index * 0.05) + 's';
+            card.innerHTML = `
+                <img src="${p.img}" alt="${p.name}" onerror="this.style.display='none';this.parentElement.innerHTML+='<div style=\\'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:40px;\\'>📦</div>'">
+                <button class="fav-btn ${isFav?'active':''}" data-id="${p.id}"><i class="fas fa-heart"></i></button>
+                <div class="name">${p.name}</div>
+                <div class="price">${p.price.toLocaleString()} ₽ <small>${p.oldPrice.toLocaleString()} ₽</small></div>
+                <div class="rating">★ ${p.rating} (${p.reviews.length})</div>
+                <button class="add-btn" data-id="${p.id}">В корзину</button>
+                ${p.oldPrice ? '<div class="badge">Скидка</div>' : ''}
+            `;
+            card.addEventListener('click', (e) => { if (e.target.closest('.add-btn') || e.target.closest('.fav-btn')) return; openProductPage(p.id); });
+            card.querySelector('.add-btn').addEventListener('click', (e) => { e.stopPropagation(); addToCart(p.id); bumpCartIcon(); });
+            card.querySelector('.fav-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleFavorite(p.id); });
+            grid.appendChild(card);
+        });
+        updateFavBadge();
+    }
+
+    // --- ФИЛЬТР ПО КАТЕГОРИЯМ ---
+    document.getElementById('categoryTabs').addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        document.querySelectorAll('#categoryTabs button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentCategory = btn.dataset.category;
+        renderProducts(currentCategory);
+    });
+
+    // --- ИЗБРАННОЕ ---
+    function toggleFavorite(id) {
+        const idx = favorites.indexOf(id);
+        if (idx > -1) favorites.splice(idx, 1);
+        else favorites.push(id);
+        localStorage.setItem('favorites', JSON.stringify(favorites));
+        renderProducts(currentCategory);
+        renderFavorites();
+        showToast(idx > -1 ? 'Удалено из избранного' : 'Добавлено в избранное', '💔');
+    }
+
+    function renderFavorites() {
+        const container = document.getElementById('favoritesList');
+        container.innerHTML = '';
+        const favProducts = products.filter(p => favorites.includes(p.id));
+        if (favProducts.length === 0) { container.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">Нет избранных товаров</p>'; return; }
+        favProducts.forEach(p => {
+            const div = document.createElement('div');
+            div.className = 'cart-item';
+            div.innerHTML = `
+                <img src="${p.img}" alt="${p.name}" onerror="this.style.display='none'">
+                <div class="cart-item-info"><div class="cart-item-name">${p.name}</div><div class="cart-item-price">${p.price.toLocaleString()} ₽</div></div>
+                <button class="add-btn" style="background:#ffc107;color:#0d0d0f;border:none;border-radius:20px;padding:6px 12px;font-weight:600;cursor:pointer;" onclick="addToCart(${p.id});bumpCartIcon();">В корзину</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function updateFavBadge() { document.getElementById('favBadge').textContent = favorites.length; }
+
+    // --- КОРЗИНА ---
+    function addToCart(id) {
+        const p = products.find(x => x.id === id);
+        if (!p) return;
+        const existing = cart.find(item => item.id === id);
+        if (existing) existing.qty += 1;
+        else cart.push({ ...p, qty: 1 });
+        updateCartUI();
+    }
+
+    function removeFromCart(id) { cart = cart.filter(item => item.id !== id); updateCartUI(); }
+
+    function changeQty(id, delta) {
+        const item = cart.find(i => i.id === id);
+        if (!item) return;
+        item.qty += delta;
+        if (item.qty <= 0) { removeFromCart(id); return; }
+        updateCartUI();
+    }
+
+    function updateCartUI() {
+        const count = cart.reduce((s, i) => s + i.qty, 0);
+        document.getElementById('cartBadge').textContent = count;
+        const container = document.getElementById('cartList');
+        if (cart.length === 0) { container.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">Корзина пуста</p>'; document.getElementById('cartTotalAmount').textContent = '0 ₽'; document.getElementById('orderForm').style.display = 'none'; return; }
+        let html = '', total = 0;
+        cart.forEach(item => {
+            const sum = item.price * item.qty;
+            total += sum;
+            html += `
+                <div class="cart-item">
+                    <img src="${item.img}" alt="${item.name}" onerror="this.style.display='none'">
+                    <div class="cart-item-info">
+                        <div class="cart-item-name">${item.name}</div>
+                        <div class="cart-item-price">${sum.toLocaleString()} ₽</div>
+                        <div class="cart-item-qty">
+                            <button onclick="changeQty(${item.id}, -1)">−</button>
+                            <span>${item.qty}</span>
+                            <button onclick="changeQty(${item.id}, 1)">+</button>
+                            <button onclick="removeFromCart(${item.id})" style="background:none;border:none;color:#ff6b35;font-size:18px;">✕</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+        document.getElementById('cartTotalAmount').textContent = total.toLocaleString() + ' ₽';
+        document.getElementById('orderForm').style.display = 'none';
+    }
+
+    function bumpCartIcon() {
+        const icon = document.getElementById('cartIcon');
+        icon.classList.remove('spring-pop');
+        void icon.offsetWidth;
+        icon.classList.add('spring-pop');
+        showToast('Товар в корзине', '🛒');
+    }
+
+    // --- ОФОРМЛЕНИЕ ЗАКАЗА ---
+    function showOrderForm() {
+        if (cart.length === 0) { showToast('Корзина пуста', '⚠️'); return; }
+        document.getElementById('orderForm').style.display = 'block';
+        const addrContainer = document.getElementById('addressList');
+        addrContainer.innerHTML = '';
+        addresses.forEach((addr, idx) => {
+            const label = document.createElement('label');
+            label.innerHTML = `<input type="radio" name="address" value="${addr}" ${idx===0?'checked':''}> ${addr}`;
+            addrContainer.appendChild(label);
+        });
+        const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+        document.getElementById('orderSummary').innerHTML = `
+            <div class="line"><span>Товары (${cart.length})</span><span>${total.toLocaleString()} ₽</span></div>
+            <div class="line"><span>Доставка</span><span>0 ₽</span></div>
+            <div class="line" style="font-weight:700;color:#ffc107;"><span>Итого</span><span>${total.toLocaleString()} ₽</span></div>
+        `;
+    }
+
+    function placeOrder() {
+        const selected = document.querySelector('input[name="address"]:checked');
+        if (!selected) { showToast('Выберите адрес', '⚠️'); return; }
+        const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+        const deliveryDate = document.getElementById('deliveryDate').value;
+        const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+        if (paymentMethod === 'balance') {
+            if (wbBalance < total) { showToast('Не хватает на балансе ВБ', '⚠️'); return; }
+            wbBalance -= total;
+        } else {
+            if (cardBalance < total) { showToast('Не хватает на карте', '⚠️'); return; }
+            cardBalance -= total;
+        }
+        const order = {
+            id: Date.now(),
+            items: cart.map(item => ({ name: item.name, qty: item.qty, price: item.price })),
+            total: total,
+            date: new Date().toLocaleString(),
+            address: selected.value,
+            delivery: deliveryDate,
+            status: 'В пути'
+        };
+        orders.unshift(order);
+        localStorage.setItem('orders', JSON.stringify(orders));
+        cart = [];
+        updateCartUI();
+        document.getElementById('orderForm').style.display = 'none';
+        showToast('✅ Заказ оформлен!', '📦');
+        updateBalancesUI();
+        navigateTo('orders');
+        renderOrders();
+    }
+
+    function renderOrders() {
+        const container = document.getElementById('ordersList');
+        container.innerHTML = '';
+        if (orders.length === 0) { container.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">У вас пока нет заказов</p>'; return; }
+        orders.forEach((order, idx) => {
+            const div = document.createElement('div');
+            div.className = 'order-item';
+            const statusClass = order.status === 'Доставлен' ? 'status-delivered' : order.status === 'В пути' ? 'status-shipped' : 'status-pending';
+            div.innerHTML = `
+                <div style="flex:1;">
+                    <div style="font-weight:600;">Заказ #${order.id}</div>
+                    <div style="font-size:12px;color:#888;">${order.date} · ${order.delivery}</div>
+                    <div style="font-size:13px;">${order.items.map(i => `${i.name} (${i.qty})`).join(', ')}</div>
+                    <div style="font-weight:700;color:#ffc107;">${order.total.toLocaleString()} ₽</div>
+                </div>
+                <div><span class="order-status ${statusClass}">${order.status}</span></div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    // --- СТРАНИЦА ТОВАРА ---
+    function openProductPage(id) {
+        const p = products.find(x => x.id === id);
+        if (!p) return;
+        currentProduct = p;
+        productImages = [p.img];
+        for (let i=1; i<=3; i++) productImages.push(p.img.replace(/w=\d+/, 'w='+(300+100*i)));
+        document.getElementById('pTitle').textContent = p.name;
+        document.getElementById('pPrice').innerHTML = `${p.price.toLocaleString()} ₽ <small>${p.oldPrice.toLocaleString()} ₽</small>`;
+        document.getElementById('pRating').textContent = `⭐ ${p.rating} (${p.reviews.length} отзывов)`;
+        document.getElementById('pDesc').textContent = p.desc;
+        const tbody = document.getElementById('pSpecsBody');
+        tbody.innerHTML = '';
+        if (p.specs) Object.entries(p.specs).forEach(([k,v]) => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${k}</td><td>${v}</td>`; tbody.appendChild(tr); });
+        renderProductReviews(p.reviews);
+        currentSlide = 0;
+        renderCarousel();
+        document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+        document.getElementById('productPage').classList.add('active');
+        document.querySelector('.bottom-nav').style.display = 'none';
+    }
+
+    function closeProductPage() { document.getElementById('productPage').classList.remove('active'); document.querySelector('.bottom-nav').style.display = 'flex'; navigateTo('home'); }
+
+    function renderCarousel() {
+        const container = document.getElementById('productCarousel');
+        container.querySelectorAll('img').forEach(img => img.remove());
+        const dotsDiv = document.getElementById('carouselDots');
+        productImages.forEach((src, idx) => {
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = 'фото';
+            img.className = idx === 0 ? 'active' : '';
+            img.onerror = function() { this.style.display = 'none'; };
+            container.insertBefore(img, container.querySelector('.prev'));
+        });
+        dotsDiv.innerHTML = '';
+        productImages.forEach((_, i) => { const dot = document.createElement('span'); dot.className = i === 0 ? 'active' : ''; dotsDiv.appendChild(dot); });
+        const prevBtn = container.querySelector('.prev'), nextBtn = container.querySelector('.next');
+        if (productImages.length <= 1) { prevBtn.style.display = 'none'; nextBtn.style.display = 'none'; } else { prevBtn.style.display = 'block'; nextBtn.style.display = 'block'; }
+    }
+
+    function changeSlide(direction) {
+        const images = document.querySelectorAll('#productCarousel img'), dots = document.querySelectorAll('#carouselDots span');
+        if (!images.length) return;
+        images.forEach(img => img.classList.remove('active'));
+        dots.forEach(d => d.classList.remove('active'));
+        currentSlide = (currentSlide + direction + images.length) % images.length;
+        images[currentSlide].classList.add('active');
+        dots[currentSlide].classList.add('active');
+    }
+
+    function renderProductReviews(reviews) {
+        const container = document.getElementById('pReviews');
+        container.innerHTML = '';
+        if (!reviews || reviews.length===0) { container.innerHTML = '<p style="color:#888;">Нет отзывов.</p>'; return; }
+        reviews.forEach(r => {
+            const div = document.createElement('div');
+            div.className = 'review-item';
+            const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+            div.innerHTML = `<div class="author">${r.author}</div><div class="stars">${stars}</div><div class="text">${r.text}</div>`;
+            container.appendChild(div);
+        });
+    }
+
+    function addProductReview() {
+        const p = currentProduct;
+        if (!p) return;
+        const name = document.getElementById('pReviewName').value.trim() || 'Гость';
+        const rating = parseInt(document.getElementById('pReviewRating').value);
+        const text = document.getElementById('pReviewText').value.trim();
+        if (!text) { showToast('Напишите текст', '✏️'); return; }
+        p.reviews.push({ author: name, rating, text });
+        const total = p.reviews.reduce((s, r) => s + r.rating, 0);
+        p.rating = Math.round((total / p.reviews.length) * 10) / 10;
+        renderProductReviews(p.reviews);
+        document.getElementById('pReviewText').value = '';
+        document.getElementById('pRating').textContent = `⭐ ${p.rating} (${p.reviews.length} отзывов)`;
+        showToast('Отзыв добавлен!', '👍');
+    }
+
+    function addCurrentToCart() { if (currentProduct) { addToCart(currentProduct.id); bumpCartIcon(); } }
+
+    function buyCurrent() { if (currentProduct) { addToCart(currentProduct.id); bumpCartIcon(); closeProductPage(); navigateTo('cart'); showOrderForm(); } }
+
+    // --- БАНК ---
+    let bankAction = 'deposit';
+
+    function showBankPopup(action) {
+        bankAction = action;
+        document.getElementById('bankPopup').classList.add('active');
+        document.getElementById('bankPopupTitle').textContent = action === 'deposit' ? 'Пополнение карты' : 'Перевод на ВБ';
+        document.getElementById('bankRecipient').style.display = action === 'transfer' ? 'block' : 'none';
+        if (action === 'transfer') document.getElementById('bankRecipient').placeholder = 'Номер счета (0000 для ВБ)';
+        document.getElementById('bankAmount').value = '';
+    }
+
+    function closeBankPopup() { document.getElementById('bankPopup').classList.remove('active'); }
+
+    function executeBankAction() {
+        const amount = parseFloat(document.getElementById('bankAmount').value);
+        if (!amount || amount <= 0) { showToast('Введите сумму', '⚠️'); return; }
+        if (bankAction === 'deposit') {
+            cardBalance += amount;
+            flashBalance('cardBalanceDisplay');
+            showToast(`Карта пополнена на ${amount.toLocaleString()} ₽`, '💳');
+            const discount = Math.floor(Math.random() * 10) + 5;
+            promoCode = `WB-${String(Math.random()).slice(2,6)}`;
+            document.getElementById('promoCodeDisplay').textContent = promoCode + ` (скидка ${discount}%)`;
+            showToast(`🎫 Ваш промокод: ${promoCode}`, '🎫');
+        } else {
+            const recipient = document.getElementById('bankRecipient').value.trim();
+            if (recipient !== '0000') { showToast('Неверный номер. Используйте 0000', '⚠️'); return; }
+            if (cardBalance < amount) { showToast('Не хватает на карте', '⚠️'); return; }
+            cardBalance -= amount;
+            wbBalance += amount;
+            flashBalance('cardBalanceDisplay');
+            flashBalance('wbBalanceDisplay');
+            showToast(`Переведено ${amount.toLocaleString()} ₽ на ВБ`, '💸');
+            closeProductPage();
+            navigateTo('home');
+        }
+        updateBalancesUI();
+        closeBankPopup();
+    }
+
+    function flashBalance(id) {
+        const el = document.getElementById(id);
+        el.classList.remove('balance-flash');
+        void el.offsetWidth;
+        el.classList.add('balance-flash');
+    }
+
+    function updateBalancesUI() {
+        document.getElementById('cardBalanceDisplay').textContent = cardBalance.toLocaleString() + ' ₽';
+        document.getElementById('wbBalanceDisplay').textContent = wbBalance.toLocaleString() + ' ₽';
+        document.getElementById('profileBalance').textContent = wbBalance.toLocaleString() + ' ₽';
+    }
+
+    // --- НАВИГАЦИЯ ---
+    function navigateTo(page) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('page-' + page).classList.add('active');
+        document.querySelectorAll('.bottom-nav .nav-item').forEach(b => b.classList.remove('active'));
+        document.querySelector(`.bottom-nav .nav-item[data-page="${page}"]`).classList.add('active');
+        if (page === 'cart') updateCartUI();
+        if (page === 'favorites') renderFavorites();
+        if (page === 'orders') renderOrders();
+        if (page === 'bank' || page === 'profile') updateBalancesUI();
+        document.getElementById('productPage').classList.remove('active');
+        document.querySelector('.bottom-nav').style.display = 'flex';
+    }
+
+    document.querySelectorAll('.bottom-nav .nav-item').forEach(btn => {
+        btn.addEventListener('click', function() { navigateTo(this.dataset.page); });
+    });
+
+    function showToast(msg, icon='✨') {
+        const toast = document.getElementById('toast');
+        toast.querySelector('.icon').textContent = icon;
+        toast.querySelector('.msg').textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // --- ПОИСК ---
+    document.getElementById('searchInput').addEventListener('input', function() {
+        const q = this.value.toLowerCase();
+        document.querySelectorAll('.product-card').forEach(card => {
+            const name = card.querySelector('.name').textContent.toLowerCase();
+            card.style.display = name.includes(q) ? '' : 'none';
+        });
+    });
+
+    // --- ИНИЦИАЛИЗАЦИЯ ---
+    renderProducts('all');
+    updateBalancesUI();
+    renderOrders();
+    navigateTo('home');
+</script>
+</body>
+</html>
